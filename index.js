@@ -1,30 +1,46 @@
-// Import the 'express' module as express
-var express = require('express');
-
-// Import the 'cors' (Cross-Origin Resource Sharing) module as cors. This is used to enable cross origins requests
-var cors = require('cors');
-
-// Use 'dotenv' module to load environment variables from a .env file into process.env
+// Import all the necessary packages and modules
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
 require('dotenv').config();
 
-// Create an Express application instance
-var app = express();
+// Initiate an instance of Express
+const server = express();
 
-// Use CORS middleware on the app. This sets up some headers on the HTTP responses telling browsers to allow us to make requests from our client-side JavaScript code to our server
-app.use(cors());
+// Enable Cross-Origin Resource Sharing to support requests from different domains, making the API publicly accessible
+server.use(cors());
 
-// Serve static files (HTML, CSS, JavaScript, images, etc.) from the 'public' directory
-app.use('/public', express.static(process.cwd() + '/public'));
+// Set the 'public' directory to serve static files
+server.use('/public', express.static(process.cwd() + '/public'));
 
-// Define a root ('/') route handler for GET requests. This sends the 'index.html' file when someone navigates to the root of our website
-app.get('/', function (req, res) {
-  res.sendFile(process.cwd() + '/views/index.html');
+// Define route for the homepage 
+server.get('/', function (request, response) {
+  // Send the HTML file located in the 'views' directory to be displayed in the user's browser
+  response.sendFile(process.cwd() + '/views/index.html');
 });
 
-// Set the port based on an environment variable, or if there's nothing set, default to 3000. This is the port at which our server will be running
-const serverPort = process.env.PORT || 3000;
+// Configure Multer, a middleware for handling HTTP requests with 'Content-Type' of 'multipart/form-data', for file upload
+const fileUpload = multer({ dest: 'uploads/' });
 
-// Have the Express application listen on the given port. Once the server is running, it logs a message to the console
-app.listen(serverPort, function () {
-  console.log('Your server is up and running on port ' + serverPort)
+// Define a route to handle file upload through POST request
+server.post('/api/fileanalyse', fileUpload.single('upfile'), function (request, response) {
+  
+  // If no file is uploaded by the user, an error is responded back
+  if (!request.file) {
+    return response.status(400).json({ error: 'No file was uploaded.' });
+  }
+
+  // Extract file properties
+  const fileName = request.file.originalname;
+  const fileType = request.file.mimetype;
+  const fileSize = request.file.size;
+
+  // Response is sent back to the user with the file properties in a JSON object
+  response.json({ name: fileName, type: fileType, size: fileSize });
+});
+
+// Define the port number for the server and start listening to requests
+const portNumber = process.env.PORT || 3000;
+server.listen(portNumber, function () {
+  console.log('Your server is up and running on port ' + portNumber);
 });
